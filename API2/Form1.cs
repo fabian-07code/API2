@@ -50,18 +50,17 @@ namespace API2
 
             if (response.IsSuccessStatusCode)
             {
-                string data = await response.Content.ReadAsStringAsync();
+               string json = await response.Content.ReadAsStringAsync();
+                var apiRespuesta= JsonConvert.DeserializeObject<dynamic>(json);
 
-                try
-                {
-                    var registros = JsonConvert.DeserializeObject<List<Tabla2>>(data);
-                    dataGridView1.DataSource = registros;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                    MessageBox.Show(data);
-                }
+                var registroJson= apiRespuesta.resultado.ToString();
+                var registros = JsonConvert.DeserializeObject<dynamic>(registroJson);
+
+                var registroJsonResult= registros.result.ToString();
+
+                var registroList = JsonConvert.DeserializeObject<List<Tabla2>>(registroJsonResult);
+                dataGridView1.DataSource = registroList;
+
             }
             else
             {
@@ -125,6 +124,38 @@ namespace API2
             {
                 MessageBox.Show($"Error al eliminar registro: {response.ReasonPhrase}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private async Task ActualizacionParcial()
+        {
+           var diccionario = new Dictionary<string, object>
+            {
+                { "Color", colorTXTS.Text},
+                { "Descripcion", descripTXT.Text }
+            };
+            string jsonData = JsonConvert.SerializeObject(diccionario);
+            StringContent content = new StringContent(jsonData, Encoding.UTF8, "application/json");
+            int id = int.Parse(IDTXT.Text);
+            HttpRequestMessage request= new HttpRequestMessage(new HttpMethod("PATCH"), $"{apiUrl}/{id}")
+            {
+                Content = content
+            };
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+                MessageBox.Show("Actualización parcial exitosa");
+            else
+                MessageBox.Show($"Error en actualización parcial: {response.ReasonPhrase}");
+
+            dataGridView1.DataSource = null;
+
+
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            ActualizacionParcial().Wait();
         }
     }
 }
